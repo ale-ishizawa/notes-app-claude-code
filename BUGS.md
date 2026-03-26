@@ -61,3 +61,13 @@ Tracking bugs discovered during code review, with descriptions, impact, and fix 
 - **Root cause:** PATCH handler order: (1) update note, (2) delete old tags, (3) insert new tags — the trigger fires during step 1 before new tags exist.
 - **Fix:** Reorder PATCH handler to: (1) delete old tags, (2) insert new tags, (3) update note content — so `trg_note_search_vector` sees the correct tag set when it fires.
 - **Commit:** Identified in review; fix applied to route handler
+
+---
+
+### BUG-007: Infinite RLS recursion on notes_select via note_shares
+- **Severity:** Critical (all note reads and creates return 500)
+- **Found in:** `supabase/migrations/20240101000000_initial_schema.sql` (notes_select + note_shares_select policies)
+- **Impact:** Any query to the `notes` table fails with "infinite recursion detected in policy for relation notes". Notes list, note detail, and note create all return 500.
+- **Root cause:** `notes_select` checks `note_shares` via a direct subquery. PostgreSQL applies `note_shares_select` when evaluating that subquery. `note_shares_select` checks `note_id IN (SELECT id FROM notes)`, which re-evaluates `notes_select` — infinite loop.
+- **Fix:** Extracted the `note_shares` check into a `SECURITY DEFINER` function `is_note_shared_with_me(note_uuid)`. SECURITY DEFINER bypasses RLS, so the function queries `note_shares` without triggering `note_shares_select`, breaking the cycle. Updated `notes_select` to call this function instead of the inline subquery.
+- **Commit:** Identified in production; fix applied to migration + live DB via SQL editor

@@ -313,6 +313,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
+-- Helper: check note_shares without triggering notes RLS (breaks recursion cycle)
+CREATE OR REPLACE FUNCTION is_note_shared_with_me(note_uuid UUID)
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM note_shares
+    WHERE note_id = note_uuid AND shared_with = auth.uid()
+  );
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
 -- Helper: check if user can view a note
 CREATE OR REPLACE FUNCTION can_view_note(note_record notes)
 RETURNS BOOLEAN AS $$
@@ -399,9 +408,7 @@ CREATE POLICY "notes_select" ON notes
     AND (
       visibility = 'org'
       OR created_by = auth.uid()
-      OR (visibility = 'shared' AND id IN (
-        SELECT note_id FROM note_shares WHERE shared_with = auth.uid()
-      ))
+      OR (visibility = 'shared' AND is_note_shared_with_me(id))
     )
   );
 

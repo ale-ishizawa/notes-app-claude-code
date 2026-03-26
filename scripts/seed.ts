@@ -107,15 +107,32 @@ async function createUser(email: string, password: string, fullName: string) {
     email_confirm: true,
     user_metadata: { full_name: fullName },
   })
-  if (error && !error.message.includes('already registered')) {
-    console.error(`Failed to create user ${email}:`, error.message)
-    return null
-  }
-  if (data.user) return data.user.id
 
-  // User exists — look up by email
-  const { data: { users } } = await supabase.auth.admin.listUsers()
-  return users.find(u => u.email === email)?.id ?? null
+  let userId: string | null = null
+
+  if (error) {
+    if (!error.message.includes('already registered')) {
+      console.error(`Failed to create user ${email}:`, error.message)
+    }
+  } else if (data.user) {
+    userId = data.user.id
+  }
+
+  // If creation failed or returned no user, look up existing
+  if (!userId) {
+    const { data: { users } } = await supabase.auth.admin.listUsers()
+    userId = users.find(u => u.email === email)?.id ?? null
+  }
+
+  if (!userId) return null
+
+  // Upsert profile — handles case where handle_new_user trigger didn't fire
+  await supabase.from('profiles').upsert(
+    { id: userId, email, full_name: fullName },
+    { onConflict: 'id' }
+  )
+
+  return userId
 }
 
 async function batchInsert<T extends object>(table: string, rows: T[], batchSize = 500) {
