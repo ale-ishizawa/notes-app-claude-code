@@ -1,0 +1,42 @@
+{
+  "name": "note-app",
+  "version": "1.0.0",
+  "description": "Multi-tenant team notes app with RBAC, versioning, search, file uploads, and AI summaries",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "seed": "npx tsx scripts/seed.ts",
+    "db:reset": "supabase db reset",
+    "db:migrate": "supabase migration up"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.9.0",
+    "@supabase/supabase-js": "^2.100.0",
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.27",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "diff-match-patch": "^1.0.5",
+    "lucide-react": "^1.7.0",
+    "next": "^14.2.35",
+    "openai": "^6.33.0",
+    "postcss": "^8.5.8",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^6.0.2"
+  },
+  "devDependencies": {
+    "@types/diff-match-patch": "^1.0.36",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.1",
+    "supabase": "^2.84.4"
+  }
+}
