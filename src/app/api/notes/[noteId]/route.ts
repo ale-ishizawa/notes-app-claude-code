@@ -46,6 +46,13 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const { title, content, visibility, tags } = await request.json()
 
+  if (title !== undefined && title.trim().length > 255) {
+    return NextResponse.json({ error: 'Title must be 255 characters or fewer' }, { status: 400 })
+  }
+  if (content !== undefined && typeof content === 'string' && content.length > 500_000) {
+    return NextResponse.json({ error: 'Content must be 500,000 characters or fewer' }, { status: 400 })
+  }
+
   const updates: Record<string, unknown> = { updated_by: user.id }
   if (title !== undefined) updates.title = title.trim()
   if (content !== undefined) updates.content = content

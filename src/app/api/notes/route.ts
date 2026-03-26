@@ -64,6 +64,12 @@ export async function POST(request: Request) {
   if (!orgId || !title?.trim()) {
     return NextResponse.json({ error: 'orgId and title are required' }, { status: 400 })
   }
+  if (title.trim().length > 255) {
+    return NextResponse.json({ error: 'Title must be 255 characters or fewer' }, { status: 400 })
+  }
+  if (typeof content === 'string' && content.length > 500_000) {
+    return NextResponse.json({ error: 'Content must be 500,000 characters or fewer' }, { status: 400 })
+  }
 
   // Check membership + role (not viewer)
   const { data: membership } = await supabase
