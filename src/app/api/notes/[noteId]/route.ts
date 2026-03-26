@@ -51,6 +51,16 @@ export async function PATCH(request: Request, { params }: Params) {
   if (content !== undefined) updates.content = content
   if (visibility !== undefined) updates.visibility = visibility
 
+  // Update tags BEFORE note update so trg_note_search_vector sees the correct tag set (BUG-006)
+  if (tags !== undefined) {
+    await supabase.from('note_tags').delete().eq('note_id', params.noteId)
+    if (tags.length > 0) {
+      await supabase.from('note_tags').insert(
+        tags.map((tag: string) => ({ note_id: params.noteId, tag: tag.trim().toLowerCase() }))
+      )
+    }
+  }
+
   const { data: note, error } = await supabase
     .from('notes')
     .update(updates)
@@ -61,16 +71,6 @@ export async function PATCH(request: Request, { params }: Params) {
   if (error) {
     log('error', 'Failed to update note', { noteId: params.noteId, error: error.message })
     return NextResponse.json({ error: 'Failed to update note' }, { status: 500 })
-  }
-
-  // Replace tags if provided
-  if (tags !== undefined) {
-    await supabase.from('note_tags').delete().eq('note_id', params.noteId)
-    if (tags.length > 0) {
-      await supabase.from('note_tags').insert(
-        tags.map((tag: string) => ({ note_id: params.noteId, tag: tag.trim().toLowerCase() }))
-      )
-    }
   }
 
   await logAudit({

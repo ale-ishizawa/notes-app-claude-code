@@ -2,6 +2,19 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { logAudit, log } from '@/lib/logger'
 
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB (BUG-001)
+
+const ALLOWED_MIME_TYPES = new Set([ // BUG-003
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+  'application/pdf',
+  'text/plain', 'text/markdown', 'text/csv',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/zip',
+])
+
 // GET /api/files?orgId=...&noteId=...
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -41,6 +54,16 @@ export async function POST(request: Request) {
 
   if (!file || !orgId) {
     return NextResponse.json({ error: 'file and orgId are required' }, { status: 400 })
+  }
+
+  // BUG-001: Enforce file size limit
+  if (file.size > MAX_FILE_SIZE) {
+    return NextResponse.json({ error: 'File exceeds 50 MB limit' }, { status: 413 })
+  }
+
+  // BUG-003: Validate MIME type against allowlist
+  if (!ALLOWED_MIME_TYPES.has(file.type)) {
+    return NextResponse.json({ error: 'File type not allowed' }, { status: 415 })
   }
 
   // Verify membership + not viewer
