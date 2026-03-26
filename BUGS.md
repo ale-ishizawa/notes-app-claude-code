@@ -84,6 +84,16 @@ Tracking bugs discovered during code review, with descriptions, impact, and fix 
 
 ---
 
+### BUG-010: All API routes fail for freshly signed-up users — auth.uid() NULL in DB context
+- **Severity:** High (new users cannot create orgs, notes, or perform any writes)
+- **Found in:** All API routes using `createClient()` for DB operations
+- **Impact:** For users who just signed up, `auth.uid()` evaluates to NULL inside PostgreSQL RLS policies even though `supabase.auth.getUser()` returns a valid user. Every INSERT/UPDATE/DELETE and any SELECT going through RLS (which uses `auth.uid()` in `is_org_member`, `get_org_role`, `notes_select`, etc.) fails. Manifests as "new row violates row-level security policy" on org creation.
+- **Root cause:** The server-side Supabase client propagates the session JWT via cookies. For freshly signed-up users, the cookie may not yet be readable by the server component in the first request after signup, causing `auth.uid()` to return NULL at the database level while `getUser()` (which validates the JWT directly against the auth service) succeeds.
+- **Fix:** Switch all API route DB operations from `createClient()` (session/anon key) to `createAdminClient()` (service role key, bypasses RLS). Auth is verified at the application level via `getUser()` before any DB call. Explicit permission checks (org membership, role) are performed in application code rather than relying on RLS.
+- **Commits:** `9f67f09` (orgs), `dc2eee6` (notes, files), `34b5de1` (share, summarize, summary, members)
+
+---
+
 ### BUG-009: audit_logs INSERT blocked — logAudit() used session client
 - **Severity:** High (audit logging silently fails for all user actions)
 - **Found in:** `src/lib/logger.ts`
