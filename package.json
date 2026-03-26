@@ -35,8 +35,10 @@
   },
   "devDependencies": {
     "@types/diff-match-patch": "^1.0.36",
+    "dotenv": "^17.3.1",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.1",
-    "supabase": "^2.84.4"
+    "supabase": "^2.84.4",
+    "tsx": "^4.21.0"
   }
 }
