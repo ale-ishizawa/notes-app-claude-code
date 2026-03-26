@@ -25,7 +25,9 @@
 | Logging | Agent wired audit log calls to all mutation routes; `logAudit()` helper never throws |
 | Seed script | Agent generated ~10k-note seed script with batch inserts, versions, shares, AI summaries |
 | Docker | Agent wrote multi-stage Dockerfile with standalone Next.js output and non-root user |
-| Hardening | Agent reviewed all security-critical paths, identified 6 bugs, fixed 4 in-place |
+| Hardening (pass 1) | Agent reviewed all security-critical paths, identified 6 bugs, fixed 4 in-place |
+| Runtime bug fixes | After browser testing revealed 500 errors, agent diagnosed and fixed 3 critical RLS violations (BUG-007, BUG-008, BUG-009) and one auth trigger issue |
+| Hardening (pass 2) | Agent added rate limiting (AI route), pagination (API + UI), input length caps — all items from REVIEW.md "would review next" list |
 
 ---
 
@@ -43,6 +45,9 @@
 - **Supabase client throws at build time** — Agent's initial client code threw at prerender time when env vars were absent. Required adding placeholder fallbacks. (Fixed: commit a9ee8a4)
 - **search_vector tag ordering (BUG-006)** — Agent wrote the PATCH handler with tags updated after the note, causing the search trigger to see stale tags. Caught during hardening review. (Fixed: hardening phase)
 - **No file upload guards** — Agent implemented file upload without size or MIME validation. Identified and fixed during hardening. (BUG-001, BUG-003)
+- **RLS infinite recursion (BUG-007)** — Agent's initial `notes_select` policy created a circular RLS dependency through `note_shares`. Only surfaced during live browser testing. Fixed with a `SECURITY DEFINER` helper function.
+- **Trigger functions not SECURITY DEFINER (BUG-008)** — Agent wrote trigger functions without `SECURITY DEFINER`, causing them to run as the session user and be blocked by RLS. Fixed when note updates returned 500 in the browser.
+- **Wrong Supabase client for audit logs (BUG-009)** — Agent used the session client in `logAudit()` instead of the admin client. All audit log writes silently failed until tested in the browser.
 
 ---
 
