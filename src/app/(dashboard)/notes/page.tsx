@@ -92,58 +92,60 @@ export default function NotesPage() {
           </Link>
         </div>
       ) : (
-        <div className="space-y-2">
-          {notes.map((note) => {
-            const Icon = visibilityIcon[note.visibility]
-            return (
-              <Link
-                key={note.id}
-                href={`/notes/${note.id}`}
-                className="block p-4 rounded-lg border border-border hover:border-primary/40 hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium truncate">{note.title}</h3>
-                    <p className="text-sm text-muted-foreground truncate mt-0.5">
-                      {note.content ? note.content.slice(0, 120) : 'No content'}
-                    </p>
-                    {note.tags && note.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {(note.tags as { tag: string }[]).map((t) => (
-                          <span
-                            key={t.tag}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent text-accent-foreground text-xs"
-                          >
-                            <Tag className="h-2.5 w-2.5" />{t.tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+        <>
+          <div className="space-y-2">
+            {notes.map((note) => {
+              const Icon = visibilityIcon[note.visibility]
+              return (
+                <Link
+                  key={note.id}
+                  href={`/notes/${note.id}`}
+                  className="block p-4 rounded-lg border border-border hover:border-primary/40 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium truncate">{note.title}</h3>
+                      <p className="text-sm text-muted-foreground truncate mt-0.5">
+                        {note.content ? note.content.slice(0, 120) : 'No content'}
+                      </p>
+                      {note.tags && note.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {(note.tags as { tag: string }[]).map((t) => (
+                            <span
+                              key={t.tag}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent text-accent-foreground text-xs"
+                            >
+                              <Tag className="h-2.5 w-2.5" />{t.tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className={cn(
+                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs',
+                        note.visibility === 'private' && 'bg-muted text-muted-foreground',
+                        note.visibility === 'shared' && 'bg-blue-100 text-blue-700',
+                        note.visibility === 'org' && 'bg-green-100 text-green-700',
+                      )}>
+                        <Icon className="h-3 w-3" />
+                        {visibilityLabel[note.visibility]}
+                      </span>
+                      <span className="text-xs text-muted-foreground">v{note.version}</span>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span className={cn(
-                      'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs',
-                      note.visibility === 'private' && 'bg-muted text-muted-foreground',
-                      note.visibility === 'shared' && 'bg-blue-100 text-blue-700',
-                      note.visibility === 'org' && 'bg-green-100 text-green-700',
-                    )}>
-                      <Icon className="h-3 w-3" />
-                      {visibilityLabel[note.visibility]}
-                    </span>
-                    <span className="text-xs text-muted-foreground">v{note.version}</span>
-                  </div>
-                </div>
-              </Link>
-            )
-          })}
-        </div>
-        {page < totalPages && (
-          <div className="flex justify-center mt-4">
-            <Button variant="outline" size="sm" onClick={handleLoadMore} disabled={loadingMore}>
-              {loadingMore ? 'Loading...' : `Load more (page ${page + 1} of ${totalPages})`}
-            </Button>
+                </Link>
+              )
+            })}
           </div>
-        )}
+          {page < totalPages && (
+            <div className="flex justify-center mt-4">
+              <Button variant="outline" size="sm" onClick={handleLoadMore} disabled={loadingMore}>
+                {loadingMore ? 'Loading...' : `Load more (page ${page + 1} of ${totalPages})`}
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
