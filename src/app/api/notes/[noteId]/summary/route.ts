@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // GET /api/notes/[noteId]/summary — fetch latest summary
 export async function GET(_req: Request, { params }: { params: { noteId: string } }) {
@@ -7,7 +8,8 @@ export async function GET(_req: Request, { params }: { params: { noteId: string 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: summary } = await supabase
+  const admin = createAdminClient()
+  const { data: summary } = await admin
     .from('ai_summaries')
     .select('*')
     .eq('note_id', params.noteId)

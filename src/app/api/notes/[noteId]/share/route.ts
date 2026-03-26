@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { logAudit } from '@/lib/logger'
 
 // POST /api/notes/[noteId]/share — add share
@@ -11,8 +12,10 @@ export async function POST(request: Request, { params }: { params: { noteId: str
   const { userId } = await request.json()
   if (!userId) return NextResponse.json({ error: 'userId is required' }, { status: 400 })
 
+  const admin = createAdminClient()
+
   // Verify note exists and is accessible
-  const { data: note } = await supabase
+  const { data: note } = await admin
     .from('notes')
     .select('id, org_id, created_by, visibility')
     .eq('id', params.noteId)
@@ -21,7 +24,7 @@ export async function POST(request: Request, { params }: { params: { noteId: str
   if (!note) return NextResponse.json({ error: 'Note not found' }, { status: 404 })
 
   // Verify target user is in same org
-  const { data: targetMembership } = await supabase
+  const { data: targetMembership } = await admin
     .from('organization_members')
     .select('id')
     .eq('org_id', note.org_id)
@@ -32,7 +35,7 @@ export async function POST(request: Request, { params }: { params: { noteId: str
     return NextResponse.json({ error: 'User is not a member of this organization' }, { status: 400 })
   }
 
-  const { error } = await supabase
+  const { error } = await admin
     .from('note_shares')
     .insert({ note_id: params.noteId, shared_with: userId })
 
@@ -57,11 +60,12 @@ export async function DELETE(request: Request, { params }: { params: { noteId: s
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { userId } = await request.json()
+  const admin = createAdminClient()
 
-  const { data: note } = await supabase.from('notes').select('id, org_id').eq('id', params.noteId).single()
+  const { data: note } = await admin.from('notes').select('id, org_id').eq('id', params.noteId).single()
   if (!note) return NextResponse.json({ error: 'Note not found' }, { status: 404 })
 
-  await supabase.from('note_shares').delete()
+  await admin.from('note_shares').delete()
     .eq('note_id', params.noteId)
     .eq('shared_with', userId)
 

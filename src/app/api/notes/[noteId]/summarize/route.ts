@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { logAudit, log } from '@/lib/logger'
 import OpenAI from 'openai'
 
@@ -28,8 +29,10 @@ export async function POST(_req: Request, { params }: { params: { noteId: string
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Fetch note — RLS ensures the user can access it
-  const { data: note } = await supabase
+  const admin = createAdminClient()
+
+  // Fetch note
+  const { data: note } = await admin
     .from('notes')
     .select('id, org_id, title, content, visibility')
     .eq('id', params.noteId)
@@ -38,7 +41,7 @@ export async function POST(_req: Request, { params }: { params: { noteId: string
   if (!note) return NextResponse.json({ error: 'Note not found' }, { status: 404 })
 
   // Check user is not a viewer
-  const { data: membership } = await supabase
+  const { data: membership } = await admin
     .from('organization_members')
     .select('role')
     .eq('org_id', note.org_id)
@@ -98,12 +101,12 @@ Be concise. key_points and action_items should have 1-5 items each. topics shoul
     const tokensUsed = completion.usage?.total_tokens ?? null
 
     // Delete any previous non-accepted summaries for this note
-    await supabase.from('ai_summaries')
+    await admin.from('ai_summaries')
       .delete()
       .eq('note_id', params.noteId)
       .neq('status', 'accepted')
 
-    const { data: summary, error: insertError } = await supabase
+    const { data: summary, error: insertError } = await admin
       .from('ai_summaries')
       .insert({
         note_id: params.noteId,

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { logAudit } from '@/lib/logger'
 
 // PATCH /api/notes/[noteId]/summary/[summaryId] — accept or reject
@@ -13,7 +14,9 @@ export async function PATCH(request: Request, { params }: { params: { noteId: st
     return NextResponse.json({ error: 'action must be accept or reject' }, { status: 400 })
   }
 
-  const { data: summary } = await supabase
+  const admin = createAdminClient()
+
+  const { data: summary } = await admin
     .from('ai_summaries')
     .select('id, org_id')
     .eq('id', params.summaryId)
@@ -22,7 +25,7 @@ export async function PATCH(request: Request, { params }: { params: { noteId: st
   if (!summary) return NextResponse.json({ error: 'Summary not found' }, { status: 404 })
 
   const status = action === 'accept' ? 'accepted' : 'rejected'
-  const { error } = await supabase
+  const { error } = await admin
     .from('ai_summaries')
     .update({ status, accepted_by: action === 'accept' ? user.id : null })
     .eq('id', params.summaryId)
