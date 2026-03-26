@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // GET /api/users/by-email?email=...
 export async function GET(request: Request) {
@@ -11,7 +12,8 @@ export async function GET(request: Request) {
   const email = searchParams.get('email')
   if (!email) return NextResponse.json({ error: 'email is required' }, { status: 400 })
 
-  const { data: profile } = await supabase
+  const admin = createAdminClient()
+  const { data: profile } = await admin
     .from('profiles')
     .select('id')
     .eq('email', email)

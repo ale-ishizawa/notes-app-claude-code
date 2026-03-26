@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -8,9 +9,10 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { orgId } = await request.json()
+  const admin = createAdminClient()
 
   // Verify user is actually a member of this org before setting cookie
-  const { data: membership } = await supabase
+  const { data: membership } = await admin
     .from('organization_members')
     .select('id')
     .eq('org_id', orgId)

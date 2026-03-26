@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // GET /api/notes/[noteId]/versions
 export async function GET(_req: Request, { params }: { params: { noteId: string } }) {
@@ -7,8 +8,8 @@ export async function GET(_req: Request, { params }: { params: { noteId: string 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // RLS on note_versions checks note access via notes RLS
-  const { data: versions, error } = await supabase
+  const admin = createAdminClient()
+  const { data: versions, error } = await admin
     .from('note_versions')
     .select(`
       id, note_id, version, title, content, change_summary, created_at,

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // GET /api/audit?orgId=...&limit=...
 export async function GET(request: Request) {
@@ -13,8 +14,21 @@ export async function GET(request: Request) {
 
   if (!orgId) return NextResponse.json({ error: 'orgId is required' }, { status: 400 })
 
-  // RLS on audit_logs already checks owner/admin role
-  const { data, error } = await supabase
+  const admin = createAdminClient()
+
+  // Verify user is owner/admin before returning audit logs
+  const { data: membership } = await admin
+    .from('organization_members')
+    .select('role')
+    .eq('org_id', orgId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!membership || !['owner', 'admin'].includes(membership.role)) {
+    return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+  }
+
+  const { data, error } = await admin
     .from('audit_logs')
     .select('id, action, resource_type, resource_id, metadata, created_at, user:profiles(id, full_name, email)')
     .eq('org_id', orgId)
