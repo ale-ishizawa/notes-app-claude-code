@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 type AuditAction =
   | 'auth.login' | 'auth.logout' | 'auth.signup'
@@ -20,9 +20,8 @@ interface AuditLogEntry {
 
 export async function logAudit(entry: AuditLogEntry): Promise<void> {
   try {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
-    // Use service role if available to bypass RLS for audit inserts
     const { error } = await supabase.from('audit_logs').insert({
       org_id: entry.org_id ?? null,
       user_id: entry.user_id ?? null,
