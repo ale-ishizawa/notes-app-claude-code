@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { logAudit, log } from '@/lib/logger'
 
 type Params = { params: { noteId: string } }
@@ -10,7 +11,9 @@ export async function GET(_req: Request, { params }: Params) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: note, error } = await supabase
+  const admin = createAdminClient()
+
+  const { data: note, error } = await admin
     .from('notes')
     .select(`
       id, org_id, title, content, visibility, created_by, updated_by, version, created_at, updated_at,
@@ -26,6 +29,30 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json({ error: 'Note not found' }, { status: 404 })
   }
 
+  // Enforce access: user must be org member
+  const { data: membership } = await admin
+    .from('organization_members')
+    .select('role')
+    .eq('org_id', note.org_id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!membership) return NextResponse.json({ error: 'Note not found' }, { status: 404 })
+
+  // Enforce visibility
+  if (note.visibility === 'private' && note.created_by !== user.id) {
+    return NextResponse.json({ error: 'Note not found' }, { status: 404 })
+  }
+  if (note.visibility === 'shared' && note.created_by !== user.id) {
+    const { data: share } = await admin
+      .from('note_shares')
+      .select('id')
+      .eq('note_id', note.id)
+      .eq('shared_with', user.id)
+      .single()
+    if (!share) return NextResponse.json({ error: 'Note not found' }, { status: 404 })
+  }
+
   return NextResponse.json({ note })
 }
 
@@ -35,8 +62,10 @@ export async function PATCH(request: Request, { params }: Params) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const admin = createAdminClient()
+
   // Fetch existing note to verify access
-  const { data: existing } = await supabase
+  const { data: existing } = await admin
     .from('notes')
     .select('id, org_id, created_by, visibility')
     .eq('id', params.noteId)
@@ -60,15 +89,15 @@ export async function PATCH(request: Request, { params }: Params) {
 
   // Update tags BEFORE note update so trg_note_search_vector sees the correct tag set (BUG-006)
   if (tags !== undefined) {
-    await supabase.from('note_tags').delete().eq('note_id', params.noteId)
+    await admin.from('note_tags').delete().eq('note_id', params.noteId)
     if (tags.length > 0) {
-      await supabase.from('note_tags').insert(
+      await admin.from('note_tags').insert(
         tags.map((tag: string) => ({ note_id: params.noteId, tag: tag.trim().toLowerCase() }))
       )
     }
   }
 
-  const { data: note, error } = await supabase
+  const { data: note, error } = await admin
     .from('notes')
     .update(updates)
     .eq('id', params.noteId)
@@ -95,7 +124,9 @@ export async function DELETE(_req: Request, { params }: Params) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: existing } = await supabase
+  const admin = createAdminClient()
+
+  const { data: existing } = await admin
     .from('notes')
     .select('id, org_id')
     .eq('id', params.noteId)
@@ -103,7 +134,7 @@ export async function DELETE(_req: Request, { params }: Params) {
 
   if (!existing) return NextResponse.json({ error: 'Note not found' }, { status: 404 })
 
-  const { error } = await supabase.from('notes').delete().eq('id', params.noteId)
+  const { error } = await admin.from('notes').delete().eq('id', params.noteId)
 
   if (error) {
     return NextResponse.json({ error: 'Failed to delete note' }, { status: 500 })

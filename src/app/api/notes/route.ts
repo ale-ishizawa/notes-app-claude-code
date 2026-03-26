@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { logAudit, log } from '@/lib/logger'
 
 // GET /api/notes?orgId=...&search=...&tag=...&visibility=...
@@ -71,8 +72,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Content must be 500,000 characters or fewer' }, { status: 400 })
   }
 
+  // Use admin client for DB operations — auth.uid() can be NULL server-side for
+  // freshly signed-up users; auth is already verified above via getUser().
+  const admin = createAdminClient()
+
   // Check membership + role (not viewer)
-  const { data: membership } = await supabase
+  const { data: membership } = await admin
     .from('organization_members')
     .select('role')
     .eq('org_id', orgId)
@@ -84,7 +89,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
   }
 
-  const { data: note, error } = await supabase
+  const { data: note, error } = await admin
     .from('notes')
     .insert({ org_id: orgId, title: title.trim(), content, visibility, created_by: user.id, updated_by: user.id })
     .select()
@@ -97,7 +102,7 @@ export async function POST(request: Request) {
 
   // Insert tags
   if (tags.length > 0) {
-    await supabase.from('note_tags').insert(
+    await admin.from('note_tags').insert(
       tags.map((tag: string) => ({ note_id: note.id, tag: tag.trim().toLowerCase() }))
     )
   }

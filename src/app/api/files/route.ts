@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { logAudit, log } from '@/lib/logger'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB (BUG-001)
@@ -70,8 +71,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'File type not allowed' }, { status: 415 })
   }
 
+  // Use admin client for DB operations — auth.uid() can be NULL for freshly signed-up users
+  const admin = createAdminClient()
+
   // Verify membership + not viewer
-  const { data: membership } = await supabase
+  const { data: membership } = await admin
     .from('organization_members')
     .select('role')
     .eq('org_id', orgId)
@@ -90,7 +94,7 @@ export async function POST(request: Request) {
     : `${orgId}/org/${fileId}/${file.name}`
 
   const arrayBuffer = await file.arrayBuffer()
-  const { error: uploadError } = await supabase.storage
+  const { error: uploadError } = await admin.storage
     .from('note-files')
     .upload(storagePath, arrayBuffer, { contentType: file.type, upsert: false })
 
@@ -99,7 +103,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 })
   }
 
-  const { data: fileRecord, error: dbError } = await supabase
+  const { data: fileRecord, error: dbError } = await admin
     .from('note_files')
     .insert({
       note_id: noteId ?? null,
@@ -115,7 +119,7 @@ export async function POST(request: Request) {
 
   if (dbError) {
     // Clean up orphaned storage object
-    await supabase.storage.from('note-files').remove([storagePath])
+    await admin.storage.from('note-files').remove([storagePath])
     return NextResponse.json({ error: 'Failed to record file metadata' }, { status: 500 })
   }
 
