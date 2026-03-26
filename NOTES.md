@@ -96,8 +96,41 @@ Running log of plans, actions, decisions, and reasoning throughout the build.
 - `docker-compose.yml` with healthcheck on `/api/health`
 - Commit: `ffbe07c`
 
+### Phase 12 — Runtime Bug Fixes (2026-03-26, post-browser testing)
+
+#### BUG-007: RLS infinite recursion on notes_select
+- `notes_select` → `note_shares` → `note_shares_select` → `notes` → infinite loop
+- Fix: extracted `is_note_shared_with_me(note_uuid)` as `SECURITY DEFINER` function; breaks RLS cycle
+- Commit: `a993292`
+
+#### BUG-008: note_versions INSERT blocked — trigger ran as session user
+- `create_note_version()` and `update_note_search_from_tags()` were not `SECURITY DEFINER`
+- RLS blocked their INSERTs/UPDATEs since `note_versions` has no INSERT policy for regular users
+- Fix: added `SECURITY DEFINER` to both trigger functions
+- Commit: `cfe965e`
+
+#### BUG-009: audit_logs INSERT blocked — logAudit() used session client
+- `logAudit()` called `createClient()` (session user); `audit_logs` has no INSERT policy for users
+- Fix: changed to `createAdminClient()` (service role bypasses RLS)
+- Commit: `cfe965e`
+
+#### Auth trigger robustness
+- `handle_new_user` trigger could roll back auth user creation if profile insert failed
+- Fix: added `ON CONFLICT DO NOTHING` + `EXCEPTION WHEN OTHERS THEN RAISE WARNING; RETURN NEW`
+- Commit: `100cd04`
+
+### Phase 13 — Hardening Pass 2 (2026-03-26)
+
+- Rate limiting: `POST /api/notes/[noteId]/summarize` — max 5 req/user/60s; returns 429
+- Pagination: `GET /api/notes` and `GET /api/files` — `page`/`limit` params with `pagination` metadata
+- Input validation: note title capped at 255 chars, content at 500k chars (both endpoints)
+- Notes list UI: paginated load-more (50 per page) replaces unbounded fetch
+- All REVIEW.md "would review next" items now resolved
+
 ### Key Decisions Made During Build
 - Reordered tag+note update to fix search vector correctness (BUG-006)
 - Chose placeholder Supabase env var fallbacks over throwing at build time (BUG-005)
 - Used admin client for org creation to close RLS race window (BUG-002 mitigation)
 - `logAudit()` designed to never throw — logging must not break primary operations
+- All trigger functions that INSERT/UPDATE RLS-protected tables must be `SECURITY DEFINER`
+- In-memory rate limiter is sufficient for single-process deployment; Redis would be needed for multi-instance
