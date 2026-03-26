@@ -68,6 +68,6 @@
 
 1. **End-to-end RLS testing** — write a test script that creates two users in different orgs and asserts they cannot read each other's notes, files, or summaries via the Supabase JS client (not the admin client).
 2. **Storage policy verification** — deploy to a local Supabase instance and verify that the `note-files` bucket policies actually block cross-org access via signed URL guessing.
-3. **Rate limiting on AI routes** — the `/api/notes/[noteId]/summarize` endpoint has no rate limit; a user could generate many expensive OpenAI calls. Add per-user rate limiting.
+3. ~~**Rate limiting on AI routes**~~ — **Fixed:** `POST /api/notes/[noteId]/summarize` now enforces max 5 requests/user/60 s (in-memory, returns 429).
 4. **Input length caps** — note title and content have no server-side length limits. Add validation to cap title at ~255 chars and content at a reasonable limit.
-5. **Pagination on list endpoints** — `GET /api/notes` and `GET /api/files` have no pagination; at 10k notes this will be slow. Add `limit`/`offset` or cursor-based pagination.
+5. ~~**Pagination on list endpoints**~~ — **Fixed:** `GET /api/notes` and `GET /api/files` now accept `page`/`limit` params and return `pagination` metadata.
