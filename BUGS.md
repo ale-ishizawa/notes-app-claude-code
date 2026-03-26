@@ -71,3 +71,23 @@ Tracking bugs discovered during code review, with descriptions, impact, and fix 
 - **Root cause:** `notes_select` checks `note_shares` via a direct subquery. PostgreSQL applies `note_shares_select` when evaluating that subquery. `note_shares_select` checks `note_id IN (SELECT id FROM notes)`, which re-evaluates `notes_select` — infinite loop.
 - **Fix:** Extracted the `note_shares` check into a `SECURITY DEFINER` function `is_note_shared_with_me(note_uuid)`. SECURITY DEFINER bypasses RLS, so the function queries `note_shares` without triggering `note_shares_select`, breaking the cycle. Updated `notes_select` to call this function instead of the inline subquery.
 - **Commit:** Identified in production; fix applied to migration + live DB via SQL editor
+
+---
+
+### BUG-008: note_versions INSERT blocked by RLS — trigger runs as session user
+- **Severity:** Critical (note updates always return 500)
+- **Found in:** `supabase/migrations/20240101000000_initial_schema.sql` (`create_note_version` function), `update_note_search_from_tags` function
+- **Impact:** Any PATCH to a note fails with "new row violates row-level security policy for table note_versions". The versioning trigger fires correctly but cannot INSERT into `note_versions` because there is no INSERT RLS policy (by design — only the trigger should write versions), and the function was not marked SECURITY DEFINER.
+- **Root cause:** Trigger functions without `SECURITY DEFINER` run as the calling session user. The session user is blocked by RLS. `update_note_search_from_tags` had the same issue when updating `notes.search_vector`.
+- **Fix:** Added `SECURITY DEFINER` to both `create_note_version()` and `update_note_search_from_tags()`. SECURITY DEFINER functions run as the function owner (postgres) and bypass RLS.
+- **Commit:** cfe965e
+
+---
+
+### BUG-009: audit_logs INSERT blocked — logAudit() used session client
+- **Severity:** High (audit logging silently fails for all user actions)
+- **Found in:** `src/lib/logger.ts`
+- **Impact:** All `logAudit()` calls fail with "new row violates row-level security policy for table audit_logs". The audit log table has no INSERT policy for regular users by design (only service role should write logs to prevent tampering), but `logAudit()` was incorrectly using the session client instead of the admin client.
+- **Root cause:** `logAudit()` called `createClient()` (session user) instead of `createAdminClient()` (service role). The session user has no INSERT grant on `audit_logs`.
+- **Fix:** Changed `logAudit()` to use `createAdminClient()`. Admin client uses the service role key and bypasses RLS entirely.
+- **Commit:** cfe965e
