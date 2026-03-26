@@ -24,21 +24,25 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const orgId = searchParams.get('orgId')
   const noteId = searchParams.get('noteId')
+  const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10))
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '50', 10)))
+  const offset = (page - 1) * limit
 
   if (!orgId) return NextResponse.json({ error: 'orgId is required' }, { status: 400 })
 
   let query = supabase
     .from('note_files')
-    .select('id, note_id, org_id, file_name, file_size, mime_type, storage_path, created_at, uploader:profiles!note_files_uploaded_by_fkey(id, full_name)')
+    .select('id, note_id, org_id, file_name, file_size, mime_type, storage_path, created_at, uploader:profiles!note_files_uploaded_by_fkey(id, full_name)', { count: 'exact' })
     .eq('org_id', orgId)
     .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
 
   if (noteId) query = query.eq('note_id', noteId)
 
-  const { data, error } = await query
+  const { data, error, count } = await query
   if (error) return NextResponse.json({ error: 'Failed to fetch files' }, { status: 500 })
 
-  return NextResponse.json({ files: data ?? [] })
+  return NextResponse.json({ files: data ?? [], pagination: { page, limit, total: count ?? 0, pages: Math.ceil((count ?? 0) / limit) } })
 }
 
 // POST /api/files — upload file

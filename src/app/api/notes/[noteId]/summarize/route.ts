@@ -5,6 +5,23 @@ import OpenAI from 'openai'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
+// Simple in-memory rate limiter: max 5 requests per user per 60 seconds
+const RATE_LIMIT = 5
+const RATE_WINDOW_MS = 60_000
+const rateLimitMap = new Map<string, { count: number; windowStart: number }>()
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(userId)
+  if (!entry || now - entry.windowStart > RATE_WINDOW_MS) {
+    rateLimitMap.set(userId, { count: 1, windowStart: now })
+    return true
+  }
+  if (entry.count >= RATE_LIMIT) return false
+  entry.count++
+  return true
+}
+
 // POST /api/notes/[noteId]/summarize
 export async function POST(_req: Request, { params }: { params: { noteId: string } }) {
   const supabase = await createClient()
@@ -31,6 +48,13 @@ export async function POST(_req: Request, { params }: { params: { noteId: string
   if (!membership || membership.role === 'viewer') {
     await logAudit({ org_id: note.org_id, user_id: user.id, action: 'permission.denied', metadata: { attempted: 'ai.summary_request', note_id: params.noteId } })
     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+  }
+
+  if (!checkRateLimit(user.id)) {
+    return NextResponse.json(
+      { error: `Rate limit exceeded: max ${RATE_LIMIT} AI summary requests per minute` },
+      { status: 429 }
+    )
   }
 
   await logAudit({

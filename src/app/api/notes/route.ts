@@ -13,6 +13,9 @@ export async function GET(request: Request) {
   const search = searchParams.get('search')
   const tag = searchParams.get('tag')
   const visibility = searchParams.get('visibility')
+  const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10))
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '50', 10)))
+  const offset = (page - 1) * limit
 
   if (!orgId) return NextResponse.json({ error: 'orgId is required' }, { status: 400 })
 
@@ -22,9 +25,10 @@ export async function GET(request: Request) {
       id, org_id, title, content, visibility, created_by, updated_by, version, created_at, updated_at,
       creator:profiles!notes_created_by_fkey(id, full_name, email),
       tags:note_tags(id, tag)
-    `)
+    `, { count: 'exact' })
     .eq('org_id', orgId)
     .order('updated_at', { ascending: false })
+    .range(offset, offset + limit - 1)
 
   if (search) {
     // Full-text search via tsvector
@@ -35,7 +39,7 @@ export async function GET(request: Request) {
     query = query.eq('visibility', visibility)
   }
 
-  const { data, error } = await query
+  const { data, error, count } = await query
 
   if (error) {
     log('error', 'Failed to list notes', { orgId, error: error.message })
@@ -47,7 +51,7 @@ export async function GET(request: Request) {
     ? data?.filter((n) => n.tags?.some((t: { tag: string }) => t.tag === tag)) ?? []
     : data ?? []
 
-  return NextResponse.json({ notes })
+  return NextResponse.json({ notes, pagination: { page, limit, total: count ?? 0, pages: Math.ceil((count ?? 0) / limit) } })
 }
 
 // POST /api/notes — create note
