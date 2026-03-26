@@ -16,27 +16,43 @@ const visibilityIcon = {
 }
 const visibilityLabel = { private: 'Private', shared: 'Shared', org: 'Org' }
 
+const PAGE_SIZE = 50
+
 export default function NotesPage() {
   const { org } = useOrg()
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const [search, setSearch] = useState('')
   const [tagFilter, setTagFilter] = useState('')
 
-  const fetchNotes = useCallback(async () => {
+  const fetchNotes = useCallback(async (pageNum = 1, append = false) => {
     if (!org) return
-    setLoading(true)
-    const params = new URLSearchParams({ orgId: org.id })
+    append ? setLoadingMore(true) : setLoading(true)
+    const params = new URLSearchParams({ orgId: org.id, page: String(pageNum), limit: String(PAGE_SIZE) })
     if (search) params.set('search', search)
     if (tagFilter) params.set('tag', tagFilter)
 
     const res = await fetch(`/api/notes?${params}`)
     const data = await res.json()
-    setNotes(data.notes ?? [])
-    setLoading(false)
+    const fetched = data.notes ?? []
+    setNotes(prev => append ? [...prev, ...fetched] : fetched)
+    setTotalPages(data.pagination?.pages ?? 1)
+    append ? setLoadingMore(false) : setLoading(false)
   }, [org, search, tagFilter])
 
-  useEffect(() => { fetchNotes() }, [fetchNotes])
+  useEffect(() => {
+    setPage(1)
+    fetchNotes(1, false)
+  }, [fetchNotes])
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1
+    setPage(nextPage)
+    fetchNotes(nextPage, true)
+  }
 
   if (!org) {
     return (
@@ -121,6 +137,13 @@ export default function NotesPage() {
             )
           })}
         </div>
+        {page < totalPages && (
+          <div className="flex justify-center mt-4">
+            <Button variant="outline" size="sm" onClick={handleLoadMore} disabled={loadingMore}>
+              {loadingMore ? 'Loading...' : `Load more (page ${page + 1} of ${totalPages})`}
+            </Button>
+          </div>
+        )}
       )}
     </div>
   )
