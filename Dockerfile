@@ -9,6 +9,9 @@ RUN npm ci --omit=dev
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+# bust Docker layer cache on every Railway deployment
+ARG RAILWAY_GIT_COMMIT_SHA=unknown
+RUN echo "Building commit: $RAILWAY_GIT_COMMIT_SHA"
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
