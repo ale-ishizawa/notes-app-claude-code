@@ -4,7 +4,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { logAudit, log } from '@/lib/logger'
 import OpenAI from 'openai'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+function getOpenAI() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
 
 // Simple in-memory rate limiter: max 5 requests per user per 60 seconds
 const RATE_LIMIT = 5
@@ -66,7 +68,7 @@ export async function POST(_req: Request, { params }: { params: { noteId: string
   })
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: 'gpt-4o-mini',
       response_format: { type: 'json_object' },
       messages: [
