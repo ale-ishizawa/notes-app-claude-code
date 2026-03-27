@@ -15,9 +15,11 @@ RUN echo "Building commit: $RAILWAY_GIT_COMMIT_SHA"
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
-# These are replaced at runtime via env — only needed for build type checking
-ENV NEXT_PUBLIC_SUPABASE_URL=http://placeholder.supabase.co
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder
+# NEXT_PUBLIC_* vars are baked into the bundle at build time — must be passed as build args
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 RUN mkdir -p ./public && npm run build
 
