@@ -3,9 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOrg } from '@/hooks/use-org'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 
 export default function NewNotePage() {
   const { org, role } = useOrg()
@@ -20,7 +17,7 @@ export default function NewNotePage() {
   if (!org || role === 'viewer') {
     return (
       <div className="max-w-2xl mx-auto p-6">
-        <p className="text-muted-foreground">You don&apos;t have permission to create notes in this organization.</p>
+        <p className="text-gray-500">You don&apos;t have permission to create notes in this organization.</p>
       </div>
     )
   }
@@ -51,46 +48,72 @@ export default function NewNotePage() {
 
   return (
     <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">New Note</h1>
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">New Note</h1>
       <form onSubmit={handleSave} className="space-y-5">
         <div className="space-y-2">
-          <Label>Title</Label>
-          <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Note title" required autoFocus />
+          <label className="text-sm font-medium text-gray-700">Title</label>
+          <input
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="Note title"
+            required
+            autoFocus
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300"
+          />
         </div>
 
         <div className="space-y-2">
-          <Label>Content</Label>
+          <label className="text-sm font-medium text-gray-700">Content</label>
           <textarea
             value={content}
             onChange={e => setContent(e.target.value)}
             placeholder="Write your note here..."
             rows={12}
-            className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 resize-y font-mono"
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300 resize-y font-mono"
           />
         </div>
 
         <div className="space-y-2">
-          <Label>Visibility</Label>
+          <label className="text-sm font-medium text-gray-700">Visibility</label>
           <div className="flex gap-3">
             {(['private', 'shared', 'org'] as const).map((v) => (
               <label key={v} className="flex items-center gap-2 cursor-pointer">
                 <input type="radio" name="visibility" value={v} checked={visibility === v} onChange={() => setVisibility(v)} />
-                <span className="text-sm capitalize">{v}</span>
+                <span className="text-sm text-gray-700 capitalize">{v}</span>
               </label>
             ))}
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label>Tags <span className="text-muted-foreground text-xs">(comma-separated)</span></Label>
-          <Input value={tags} onChange={e => setTags(e.target.value)} placeholder="design, product, Q1" />
+          <label className="text-sm font-medium text-gray-700">
+            Tags <span className="text-gray-400 text-xs">(comma-separated)</span>
+          </label>
+          <input
+            value={tags}
+            onChange={e => setTags(e.target.value)}
+            placeholder="design, product, Q1"
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300"
+          />
         </div>
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="flex gap-3">
-          <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Create Note'}</Button>
-          <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-4 py-2 rounded-md text-sm font-medium text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-60 transition-all shadow-sm"
+          >
+            {saving ? 'Saving...' : 'Create Note'}
+          </button>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="px-4 py-2 rounded-md text-sm font-medium text-gray-600 border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
         </div>
       </form>
     </div>

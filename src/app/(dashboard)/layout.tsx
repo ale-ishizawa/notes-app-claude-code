@@ -34,7 +34,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     >
       <div className="flex h-screen overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-auto bg-background">
+        <main className="flex-1 overflow-auto bg-gradient-to-br from-amber-50 via-orange-50 to-cyan-50">
           {children}
         </main>
       </div>

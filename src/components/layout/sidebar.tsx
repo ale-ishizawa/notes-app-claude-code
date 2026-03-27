@@ -61,7 +61,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-60 flex flex-col h-screen border-r border-border bg-white">
+    <aside className="w-60 flex flex-col h-screen border-r border-gray-200 bg-white">
       {/* Brand header */}
       <div className="bg-gradient-to-br from-amber-400 to-cyan-400 p-4 flex items-center gap-3">
         <AppLogo size={36} />
@@ -69,34 +69,34 @@ export function Sidebar() {
       </div>
 
       {/* Org Switcher */}
-      <div className="p-3 border-b border-border">
+      <div className="p-3 border-b border-gray-200">
         <button
           onClick={() => setShowOrgMenu(!showOrgMenu)}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-muted text-sm font-medium"
+          className="w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-amber-50 text-sm font-medium text-gray-800 transition-colors"
         >
           <span className="truncate">{org?.name ?? 'Select Organization'}</span>
-          <ChevronDown className="h-4 w-4 shrink-0 ml-2" />
+          <ChevronDown className="h-4 w-4 shrink-0 ml-2 text-gray-500" />
         </button>
 
         {showOrgMenu && (
-          <div className="mt-1 rounded-md border border-border bg-card shadow-md">
+          <div className="mt-1 rounded-md border border-gray-200 bg-white shadow-md overflow-hidden">
             {orgs.map(({ org: o, role }) => (
               <button
                 key={o.id}
                 onClick={() => { switchOrg(o.id); setShowOrgMenu(false) }}
                 className={cn(
-                  'w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted text-left',
-                  org?.id === o.id && 'bg-muted font-medium'
+                  'w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-amber-50 text-left text-gray-700 transition-colors',
+                  org?.id === o.id && 'bg-amber-50 font-medium text-amber-700'
                 )}
               >
                 <span className="truncate">{o.name}</span>
-                <span className="text-xs text-muted-foreground ml-2">{role}</span>
+                <span className="text-xs text-gray-400 ml-2">{role}</span>
               </button>
             ))}
-            <div className="border-t border-border">
+            <div className="border-t border-gray-200">
               <button
                 onClick={() => { setShowCreateOrg(true); setShowOrgMenu(false) }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-amber-600 font-medium"
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-amber-50 text-amber-600 font-medium transition-colors"
               >
                 <Plus className="h-3 w-3" /> New Organization
               </button>
@@ -111,7 +111,7 @@ export function Sidebar() {
               value={newOrgName}
               onChange={e => setNewOrgName(e.target.value)}
               placeholder="Org name"
-              className="w-full px-2 py-1 text-sm border border-border rounded-md bg-background"
+              className="w-full px-2 py-1 text-sm border border-gray-200 rounded-md bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300"
             />
             <Button type="submit" size="sm" className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0" disabled={creating}>
               {creating ? 'Creating...' : 'Create Organization'}
@@ -132,7 +132,7 @@ export function Sidebar() {
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
                 active
                   ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium shadow-sm'
-                  : 'hover:bg-muted text-foreground'
+                  : 'hover:bg-amber-50 text-gray-700 hover:text-amber-700'
               )}
             >
               <Icon className="h-4 w-4" />
@@ -143,10 +143,10 @@ export function Sidebar() {
       </nav>
 
       {/* Sign out */}
-      <div className="p-2 border-t border-border">
+      <div className="p-2 border-t border-gray-200">
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-muted text-muted-foreground"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-amber-50 text-gray-500 hover:text-amber-700 transition-colors"
         >
           <LogOut className="h-4 w-4" />
           Sign Out

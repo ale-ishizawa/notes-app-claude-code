@@ -2,14 +2,18 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useOrg } from '@/hooks/use-org'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 
 interface Member {
   id: string
   role: string
   profile: { id: string; full_name: string; email: string }
+}
+
+const roleBadge: Record<string, string> = {
+  owner: 'bg-amber-100 text-amber-800',
+  admin: 'bg-orange-100 text-orange-700',
+  member: 'bg-blue-100 text-blue-700',
+  viewer: 'bg-gray-100 text-gray-600',
 }
 
 export default function SettingsPage() {
@@ -62,53 +66,62 @@ export default function SettingsPage() {
     setInviting(false)
   }
 
-  if (!org) return <div className="p-6 text-muted-foreground">Select an organization first.</div>
+  if (!org) return <div className="p-6 text-gray-500">Select an organization first.</div>
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">{org.name}</h1>
-        <p className="text-sm text-muted-foreground">Your role: <strong>{role}</strong></p>
+        <h1 className="text-2xl font-bold text-gray-800">{org.name}</h1>
+        <p className="text-sm text-gray-500 mt-1">Your role: <strong className="text-gray-700">{role}</strong></p>
       </div>
 
       {/* Members */}
       <section>
-        <h2 className="text-lg font-semibold mb-4">Members</h2>
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">Members</h2>
         <div className="space-y-2 mb-4">
           {members.map((m) => (
-            <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
+            <div key={m.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-white/60">
               <div>
-                <p className="text-sm font-medium">{m.profile?.full_name}</p>
-                <p className="text-xs text-muted-foreground">{m.profile?.email}</p>
+                <p className="text-sm font-medium text-gray-800">{m.profile?.full_name}</p>
+                <p className="text-xs text-gray-500">{m.profile?.email}</p>
               </div>
-              <span className="text-xs px-2 py-1 rounded-full bg-muted capitalize">{m.role}</span>
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${roleBadge[m.role] ?? 'bg-gray-100 text-gray-600'}`}>
+                {m.role}
+              </span>
             </div>
           ))}
         </div>
 
         {isAdminOrOwner && (
-          <form onSubmit={handleInvite} className="space-y-3 p-4 border border-border rounded-lg">
-            <h3 className="font-medium text-sm">Invite Member</h3>
+          <form onSubmit={handleInvite} className="space-y-3 p-4 border border-gray-200 rounded-lg bg-white/60">
+            <h3 className="font-medium text-sm text-gray-700">Invite Member</h3>
             <div className="flex gap-3">
-              <Input
+              <input
                 type="email"
                 placeholder="colleague@example.com"
                 value={inviteEmail}
                 onChange={e => setInviteEmail(e.target.value)}
                 required
+                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300"
               />
               <select
                 value={inviteRole}
                 onChange={e => setInviteRole(e.target.value)}
-                className="px-3 py-2 text-sm border border-border rounded-md bg-background"
+                className="px-3 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-300"
               >
                 <option value="member">Member</option>
                 <option value="admin">Admin</option>
                 <option value="viewer">Viewer</option>
               </select>
-              <Button type="submit" disabled={inviting}>{inviting ? 'Inviting...' : 'Invite'}</Button>
+              <button
+                type="submit"
+                disabled={inviting}
+                className="px-4 py-2 rounded-md text-sm font-medium text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-60 transition-all shadow-sm"
+              >
+                {inviting ? 'Inviting...' : 'Invite'}
+              </button>
             </div>
-            {inviteError && <p className="text-xs text-destructive">{inviteError}</p>}
+            {inviteError && <p className="text-xs text-red-600">{inviteError}</p>}
             {inviteSuccess && <p className="text-xs text-green-600">Member invited successfully!</p>}
           </form>
         )}
@@ -117,12 +130,15 @@ export default function SettingsPage() {
       {/* Audit Logs */}
       {isAdminOrOwner && auditLogs.length > 0 && (
         <section>
-          <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
-          <div className="space-y-1">
-            {auditLogs.map((log) => (
-              <div key={log.id} className="flex items-center justify-between py-2 border-b border-border text-sm">
-                <span className="font-mono text-xs text-primary">{log.action}</span>
-                <span className="text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString()}</span>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h2>
+          <div className="rounded-lg border border-gray-200 bg-white/60 overflow-hidden">
+            {auditLogs.map((log, i) => (
+              <div
+                key={log.id}
+                className={`flex items-center justify-between px-4 py-2.5 text-sm ${i < auditLogs.length - 1 ? 'border-b border-gray-100' : ''}`}
+              >
+                <span className="font-mono text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded">{log.action}</span>
+                <span className="text-xs text-gray-400">{new Date(log.created_at).toLocaleString()}</span>
               </div>
             ))}
           </div>

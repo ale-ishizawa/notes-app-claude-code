@@ -17,7 +17,7 @@ export function DiffViewer({ oldText, newText }: DiffViewerProps) {
   }, [oldText, newText])
 
   return (
-    <div className="font-mono text-sm whitespace-pre-wrap bg-muted rounded-md p-4 overflow-auto max-h-96">
+    <div className="font-mono text-sm whitespace-pre-wrap bg-gray-50 border border-gray-200 text-gray-800 rounded-md p-4 overflow-auto max-h-96">
       {diffs.map(([op, text], i) => {
         if (op === 0) return <span key={i}>{text}</span>
         if (op === -1) return <span key={i} className="bg-red-200 text-red-900 line-through">{text}</span>

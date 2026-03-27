@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Upload, Download, Trash2, FileText } from 'lucide-react'
 import { useOrg } from '@/hooks/use-org'
-import { Button } from '@/components/ui/button'
 import type { NoteFile } from '@/types/database'
 
 function formatBytes(bytes: number) {
@@ -62,46 +61,58 @@ export default function FilesPage() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Files</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Files</h1>
         {canUpload && (
           <>
-            <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-              <Upload className="h-4 w-4 mr-2" />{uploading ? 'Uploading...' : 'Upload File'}
-            </Button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-60 transition-all shadow-sm"
+            >
+              <Upload className="h-4 w-4" />{uploading ? 'Uploading...' : 'Upload File'}
+            </button>
             <input ref={fileInputRef} type="file" className="hidden" onChange={handleUpload} />
           </>
         )}
       </div>
 
       {!org ? (
-        <p className="text-muted-foreground">Select an organization first.</p>
+        <p className="text-gray-500">Select an organization first.</p>
       ) : files.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-center py-12 text-gray-400">
           <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
           <p>No files uploaded yet.</p>
         </div>
       ) : (
         <div className="space-y-2">
           {files.map((f) => (
-            <div key={f.id} className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50">
+            <div key={f.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-200 bg-white/60 hover:bg-amber-50/40 hover:border-amber-200 transition-colors">
               <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                <FileText className="h-5 w-5 text-gray-400 shrink-0" />
                 <div>
-                  <p className="font-medium text-sm">{f.file_name}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-medium text-sm text-gray-800">{f.file_name}</p>
+                  <p className="text-xs text-gray-500">
                     {formatBytes(f.file_size)} · {new Date(f.created_at).toLocaleDateString()}
                     {(f.uploader as { full_name?: string } | undefined)?.full_name && ` · ${(f.uploader as { full_name: string }).full_name}`}
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button size="sm" variant="ghost" onClick={() => handleDownload(f.id, f.file_name)}>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => handleDownload(f.id, f.file_name)}
+                  className="p-2 rounded-md text-gray-500 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                  title="Download"
+                >
                   <Download className="h-4 w-4" />
-                </Button>
+                </button>
                 {canUpload && (
-                  <Button size="sm" variant="ghost" onClick={() => handleDelete(f.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <button
+                    onClick={() => handleDelete(f.id)}
+                    className="p-2 rounded-md text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 )}
               </div>
             </div>
