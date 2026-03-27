@@ -20,16 +20,22 @@ export async function GET(request: Request) {
 
   if (!orgId) return NextResponse.json({ error: 'orgId is required' }, { status: 400 })
 
+  // Use !inner join when filtering by tag so count reflects only matching notes
+  const tagJoin = tag ? 'note_tags!inner' : 'note_tags'
   let query = supabase
     .from('notes')
     .select(`
       id, org_id, title, content, visibility, created_by, updated_by, version, created_at, updated_at,
       creator:profiles!notes_created_by_fkey(id, full_name, email),
-      tags:note_tags(id, tag)
+      tags:${tagJoin}(id, tag)
     `, { count: 'exact' })
     .eq('org_id', orgId)
     .order('updated_at', { ascending: false })
     .range(offset, offset + limit - 1)
+
+  if (tag) {
+    query = query.eq('note_tags.tag', tag)
+  }
 
   if (search) {
     // Full-text search via tsvector
@@ -47,12 +53,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Failed to fetch notes' }, { status: 500 })
   }
 
-  // Filter by tag client-side (simpler than a join filter for now)
-  const notes = tag
-    ? data?.filter((n) => n.tags?.some((t: { tag: string }) => t.tag === tag)) ?? []
-    : data ?? []
-
-  return NextResponse.json({ notes, pagination: { page, limit, total: count ?? 0, pages: Math.ceil((count ?? 0) / limit) } })
+  return NextResponse.json({ notes: data ?? [], pagination: { page, limit, total: count ?? 0, pages: Math.ceil((count ?? 0) / limit) } })
 }
 
 // POST /api/notes — create note

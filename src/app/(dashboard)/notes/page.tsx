@@ -24,24 +24,39 @@ export default function NotesPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [tagFilter, setTagFilter] = useState('')
+  const [debouncedTag, setDebouncedTag] = useState('')
 
-  const fetchNotes = useCallback(async (pageNum = 1, append = false) => {
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedTag(tagFilter), 300)
+    return () => clearTimeout(t)
+  }, [tagFilter])
+
+  const fetchNotes = useCallback(async (pageNum = 1, append = false, signal?: AbortSignal) => {
     if (!org) return
     append ? setLoadingMore(true) : setLoading(true)
     const params = new URLSearchParams({ orgId: org.id, page: String(pageNum), limit: String(PAGE_SIZE) })
-    if (tagFilter) params.set('tag', tagFilter)
+    if (debouncedTag) params.set('tag', debouncedTag)
 
-    const res = await fetch(`/api/notes?${params}`)
-    const data = await res.json()
-    const fetched = data.notes ?? []
-    setNotes(prev => append ? [...prev, ...fetched] : fetched)
-    setTotalPages(data.pagination?.pages ?? 1)
-    append ? setLoadingMore(false) : setLoading(false)
-  }, [org, tagFilter])
+    try {
+      const res = await fetch(`/api/notes?${params}`, { signal })
+      const data = await res.json()
+      const fetched = data.notes ?? []
+      setNotes(prev => append ? [...prev, ...fetched] : fetched)
+      setTotalPages(data.pagination?.pages ?? 1)
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return
+    } finally {
+      if (!signal?.aborted) {
+        append ? setLoadingMore(false) : setLoading(false)
+      }
+    }
+  }, [org, debouncedTag])
 
   useEffect(() => {
+    const controller = new AbortController()
     setPage(1)
-    fetchNotes(1, false)
+    fetchNotes(1, false, controller.signal)
+    return () => controller.abort()
   }, [fetchNotes])
 
   const handleLoadMore = () => {
