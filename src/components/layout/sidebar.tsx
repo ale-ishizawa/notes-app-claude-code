@@ -48,7 +48,13 @@ export function Sidebar() {
       const { org } = await res.json()
       setNewOrgName('')
       setShowCreateOrg(false)
-      switchOrg(org.id)
+      // Set new org as active, then refresh so server re-renders the updated orgs list
+      await fetch('/api/orgs/active', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgId: org.id }),
+      })
+      router.refresh()
     }
     setCreating(false)
   }
@@ -92,16 +98,16 @@ export function Sidebar() {
         )}
 
         {showCreateOrg && (
-          <form onSubmit={handleCreateOrg} className="mt-2 flex gap-2">
+          <form onSubmit={handleCreateOrg} className="mt-2 flex flex-col gap-2">
             <input
               autoFocus
               value={newOrgName}
               onChange={e => setNewOrgName(e.target.value)}
               placeholder="Org name"
-              className="flex-1 px-2 py-1 text-sm border border-border rounded-md bg-background"
+              className="w-full px-2 py-1 text-sm border border-border rounded-md bg-background"
             />
-            <Button type="submit" size="sm" disabled={creating}>
-              {creating ? '...' : 'Create'}
+            <Button type="submit" size="sm" className="w-full" disabled={creating}>
+              {creating ? 'Creating...' : 'Create Organization'}
             </Button>
           </form>
         )}
