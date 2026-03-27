@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+// @ts-ignore - no types available for diff-match-patch
 import { diff_match_patch } from 'diff-match-patch'
 
 interface DiffViewerProps {
