@@ -77,6 +77,52 @@ docker build -t teamnotes .
 docker run -p 3000:3000 --env-file .env.local teamnotes
 ```
 
+## Railway Deployment
+
+Railway deploys directly from the Dockerfile. `railway.json` is pre-configured with health checks and restart policies.
+
+### Step 1 — Create a Supabase cloud project
+
+1. Go to [supabase.com](https://supabase.com) → New project
+2. Once provisioned, open **SQL Editor** and run the full contents of `supabase/migrations/20240101000000_initial_schema.sql`
+3. Go to **Project Settings → API** and copy:
+   - Project URL → `NEXT_PUBLIC_SUPABASE_URL`
+   - `anon` public key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `service_role` secret key → `SUPABASE_SERVICE_ROLE_KEY`
+4. Go to **Storage** → create a bucket named `note-files` (set to private)
+
+### Step 2 — Deploy to Railway
+
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login
+railway login
+
+# Create project and link repo
+railway init
+
+# Set environment variables
+railway variables set NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
+railway variables set NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+railway variables set SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+railway variables set OPENAI_API_KEY=sk-...
+
+# Deploy
+railway up
+```
+
+Or via the Railway dashboard: create a new project → **Deploy from GitHub repo** → add the four env vars above → Railway auto-detects the Dockerfile and deploys.
+
+### Step 3 — Verify
+
+Once deployed, visit `https://<your-app>.railway.app/api/health` — should return `{"status":"ok"}`.
+
+Then sign up for a new account and create your first organization.
+
+> **Note:** The seed script (`npm run seed`) requires a `DATABASE_URL` pointing to the Supabase cloud Postgres instance. Find it in **Project Settings → Database → Connection string (URI)**. Run locally with `DATABASE_URL=<url> npm run seed`.
+
 ## Architecture
 
 See [NOTES.md](NOTES.md) for detailed architecture decisions and reasoning.
