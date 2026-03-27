@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import { useOrg } from '@/hooks/use-org'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { AppLogo } from '@/components/ui/app-logo'
 
 const navItems = [
   { href: '/notes', label: 'Notes', icon: FileText },
@@ -60,7 +61,13 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-60 flex flex-col h-screen border-r border-border bg-card">
+    <aside className="w-60 flex flex-col h-screen border-r border-border bg-white">
+      {/* Brand header */}
+      <div className="bg-gradient-to-br from-amber-400 to-cyan-400 p-4 flex items-center gap-3">
+        <AppLogo size={36} />
+        <span className="font-bold text-white text-lg drop-shadow-sm tracking-tight">TeamNotes</span>
+      </div>
+
       {/* Org Switcher */}
       <div className="p-3 border-b border-border">
         <button
@@ -89,7 +96,7 @@ export function Sidebar() {
             <div className="border-t border-border">
               <button
                 onClick={() => { setShowCreateOrg(true); setShowOrgMenu(false) }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-primary"
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-amber-600 font-medium"
               >
                 <Plus className="h-3 w-3" /> New Organization
               </button>
@@ -106,7 +113,7 @@ export function Sidebar() {
               placeholder="Org name"
               className="w-full px-2 py-1 text-sm border border-border rounded-md bg-background"
             />
-            <Button type="submit" size="sm" className="w-full" disabled={creating}>
+            <Button type="submit" size="sm" className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0" disabled={creating}>
               {creating ? 'Creating...' : 'Create Organization'}
             </Button>
           </form>
@@ -115,21 +122,24 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 p-2 space-y-1">
-        {navItems.map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={cn(
-              'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
-              pathname.startsWith(href)
-                ? 'bg-primary text-primary-foreground'
-                : 'hover:bg-muted text-foreground'
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </Link>
-        ))}
+        {navItems.map(({ href, label, icon: Icon }) => {
+          const active = pathname.startsWith(href)
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
+                active
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium shadow-sm'
+                  : 'hover:bg-muted text-foreground'
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </Link>
+          )
+        })}
       </nav>
 
       {/* Sign out */}
